@@ -1,6 +1,8 @@
 package com.ghostflying.grsinformation;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -9,6 +11,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
+import com.ghostflying.grsinformation.Course;
 import com.github.kevinsawicki.http.HttpRequest;
 
 public class GetGrsInfoClass {
@@ -17,7 +20,7 @@ public class GetGrsInfoClass {
 	private String username = DebugInfo.username;
 	private String password = DebugInfo.password;
 	
-	public State state = State.NONE;
+	private State state = State.NONE;
 	
 	
 	final String LOGIN_REQUEST_URL = "https://grs.zju.edu.cn/cas/login?service=http%3A%2F%2Fgrs.zju.edu.cn%2Fpy%2Fpage%2Fstudent%2Fgrkcb.htm";
@@ -35,7 +38,7 @@ public class GetGrsInfoClass {
 		POST, GET
 	}
 	
-	public enum State {
+	private enum State {
 		NONE, LOGED
 	}
 	
@@ -49,10 +52,9 @@ public class GetGrsInfoClass {
 				sendTicket((Map<String, String>) msg.obj);
 				break;
 			case TICKET_REQUEST:
-				getClassesList((Map<String, String>) msg.obj);
+				getLogedSession((Map<String, String>) msg.obj);
 				break;
-			case PAGE_REQUEST:
-				checkIsLoged((Map<String, String>) msg.obj);
+			case PAGE_REQUEST:				
 				break;
 			}
 		}
@@ -61,9 +63,25 @@ public class GetGrsInfoClass {
 	public GetGrsInfoClass () {
 		
 	}
-
 	
-	public boolean preLogin() {
+	public boolean getClassesList() {
+		if (state == State.LOGED) {
+			if (requestThread == null) {
+				requestThread = new RequestThread (CLASS_LIST_URL);
+				requestThread.start();
+			}
+			else {
+				Log.e(TAG, "Thread is running.");
+			}
+		}
+		else {
+			preLogin();
+		}
+		
+		return false;
+	}
+	
+	private boolean preLogin() {
 		if (requestThread == null) {
 			requestThread = new RequestThread (PRE_LOGIN_REQUEST, LOGIN_REQUEST_URL, RequestMethod.POST);
 			requestThread.start();
@@ -96,20 +114,18 @@ public class GetGrsInfoClass {
 		return false;
 	}
 	
-	private boolean getClassesList (Map<String,String> logedPara){
-		if (requestThread == null) {
-			sessionID = logedPara.get("cookie");
-			requestThread = new RequestThread (CLASS_LIST_URL);
-			requestThread.start();
-			return true;
+
+	private boolean getLogedSession (Map<String,String> logedPara){
+		sessionID = logedPara.get("cookie");
+		state = State.LOGED;
+		if (D) {
+			Log.d(TAG, "Loged successfully.");
 		}
+		getClassesList();
 		return false;
 	}
 	
-	private boolean checkIsLoged (Map<String,String> logedPara) {
-		
-		return false;
-	}
+	
 	
 	private String parseCookie (String setCookie) {
 		String cookie = null;
@@ -212,6 +228,34 @@ public class GetGrsInfoClass {
 			default:
 				Log.e(TAG, "Unknown error.\n" + String.valueOf(returnCode) + "\n" + request.body());
 			}
+			
+			if (returnType == PRE_LOGIN_REQUEST && returnCode != 200){
+				state = GetGrsInfoClass.State.NONE;
+				Log.e(TAG, "Error when preLogin.");
+				return;
+			}
+			
+			if (returnType == LOGIN_REQUEST && returnCode != 302) {
+				state = GetGrsInfoClass.State.NONE;
+				Log.e(TAG, "Error when login request.");
+				return;
+			}
+			
+			if (returnType == TICKET_REQUEST && returnCode != 302) {
+				state = GetGrsInfoClass.State.NONE;
+				Log.e(TAG, "Error when post ticket.");
+				return;
+			}
+			
+			if (returnType == PAGE_REQUEST && returnCode == 302){
+				Log.e(TAG, "Error: Not Login.");
+				state = GetGrsInfoClass.State.NONE;
+				return;
+			} else if (returnType == PAGE_REQUEST && returnCode != 200) {
+				Log.e(TAG, "Error when get page.");
+				return;
+			}
+			
 			if (returnType == PRE_LOGIN_REQUEST || returnType ==  TICKET_REQUEST) {
 				returnCookie = request.header("Set-Cookie");	
 				returnCookie = parseCookie(returnCookie);
@@ -225,23 +269,112 @@ public class GetGrsInfoClass {
 				returnValue.put("lt", ltAndExcu[0]);
 				returnValue.put("execution", ltAndExcu[1]);
 				returnValue.put("cookie", returnCookie);
+				returnMessage = Message.obtain(RequestCallback, returnType, returnValue);
 				break;
 			case LOGIN_REQUEST:
 				returnValue.put("reDirectUrl", reDirectUrl);
+				returnMessage = Message.obtain(RequestCallback, returnType, returnValue);
 				break;
 			case TICKET_REQUEST:
 				returnValue.put("cookie", returnCookie);
+				returnMessage = Message.obtain(RequestCallback, returnType, returnValue);
 				break;
-			case PAGE_REQUEST:
-				returnValue.put("content", body);
+			case PAGE_REQUEST:;
+				returnMessage = Message.obtain(RequestCallback, returnType, parseCoursesList(body));
 				break;
 			}
-			returnMessage = Message.obtain(RequestCallback, returnType, returnValue);
-			returnMessage.sendToTarget();	
+			
+					
 			requestThread = null;
+			returnMessage.sendToTarget();	
+			
 			if (D) {
 				Log.d(TAG, "requestThread exit.");
 			}	
 		}
+		
+		private ArrayList<Course> parseCoursesList (String body) {
+			ArrayList<Course> courses = new ArrayList<Course>();
+			String tableBody = body.substring(body.indexOf("<tbody>"));			
+			String[] courseBodys = tableBody.split("<tr class");
+			
+						
+			Pattern courseNumberPattern = Pattern.compile("(?<=</span></td>)\\s+<td>\\d+(?=</td>)", Pattern.DOTALL);
+			Pattern courseNamePattern = Pattern.compile("(?<=\"white\">).+(?=</a></td>)");
+			Pattern courseLocationAndTimePattern = Pattern.compile("(?<=<td class=\"vat\">).+(?=</td>)");
+			Pattern courseSeperaPattern = Pattern.compile(".+(?=<)");
+			for (int i = 1; i < courseBodys.length; i++) {
+				Course mCourse = new Course ();
+				
+				Matcher courseNumberMatcher = courseNumberPattern.matcher(courseBodys[i]);
+				if (courseNumberMatcher.find()) {
+					mCourse.courseNum = courseNumberMatcher.group().substring(11);
+				} 
+				else {
+					Log.e(TAG, "CourseNum Match error at No." + Integer.toString(i));
+				}				
+				
+				Matcher courseNameMatcher = courseNamePattern.matcher(courseBodys[i]);
+				if (courseNameMatcher.find()) {
+					mCourse.name = courseNameMatcher.group();
+				} 
+				else {
+					Log.e(TAG, "CourseName Match error at No." + Integer.toString(i));
+				}
+				
+				Matcher courseLocationAndTimeMatcher = courseLocationAndTimePattern.matcher(courseBodys[i]);
+				if (courseLocationAndTimeMatcher.find()) {
+					String locationAndTimeTable = courseLocationAndTimeMatcher.group();
+					String[]  locationAndTimes = locationAndTimeTable.split("</span>");
+					String semesterStr = null;
+					String freStr = null;
+					String dayStr = null;
+					String classStr = null;
+					String location = null;
+					for (int j = 1; j < locationAndTimes.length; j++) {
+						Matcher courseSeperaMatcher = courseSeperaPattern.matcher(locationAndTimes[j]);
+						if (courseSeperaMatcher.find()) {
+							String splitStr = courseSeperaMatcher.group().replace("<br>", "");
+							if (D) {
+								//Log.d("", splitStr);
+							}
+							switch (j % 4) {
+							case 1:
+								semesterStr = splitStr.substring(0, splitStr.indexOf('('));
+								freStr = splitStr.substring(splitStr.indexOf('(') + 1, splitStr.indexOf(')'));								
+								break;
+							case 2:
+								dayStr = splitStr;
+								break;
+							case 3:
+								classStr = splitStr;
+								break;
+							case 0:
+								location = splitStr;
+								mCourse.addOneClass(semesterStr, freStr, dayStr, location, classStr);
+								break;
+								
+							}
+						}
+					}
+				} 
+				else {
+					Log.d(TAG, "CourseLocationAndTime Match is null at No." + Integer.toString(i));
+				}
+				
+				String[] splitedByTd = courseBodys[i].split("</td>");
+				mCourse.teacher = splitedByTd[7].substring(11);
+				mCourse.convertData();
+				courses.add(mCourse);
+			}	
+			
+
+			
+			return courses;
+		}
+		
+
+		
+
 	}
 }
