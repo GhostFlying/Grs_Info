@@ -7,13 +7,19 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
 import com.ghostflying.grsinformation.Course;
+import com.ghostflying.grsinformation.Course.DayOfTheWeek;
+import com.ghostflying.grsinformation.Course.EachClass;
+import com.ghostflying.grsinformation.Course.Frequent;
+import com.ghostflying.grsinformation.Course.Semester;
 import com.github.kevinsawicki.http.HttpRequest;
 
 public class GetGrsInfoClass {
@@ -23,10 +29,13 @@ public class GetGrsInfoClass {
 	private String password = DebugInfo.password;
 	
 	private State state = State.NONE;
-	
+	private Context context = null;
+	private ArrayList<Course> coursesData = null;
 	
 	final String LOGIN_REQUEST_URL = "https://grs.zju.edu.cn/cas/login?service=http%3A%2F%2Fgrs.zju.edu.cn%2Fpy%2Fpage%2Fstudent%2Fgrkcb.htm";
 	final String CLASS_LIST_URL = "http://grs.zju.edu.cn/py/page/student/grkcgl.htm";
+	final String DB_NAME = "courses.db";
+	final int DB_VERSION = 1;
 	final int PRE_LOGIN_REQUEST = 1;
 	final int LOGIN_REQUEST = 2;
 	final int TICKET_REQUEST = 3;
@@ -41,7 +50,7 @@ public class GetGrsInfoClass {
 	}
 	
 	private enum State {
-		NONE, LOGED
+		NONE, LOGED, DONE
 	}
 	
 	private Handler RequestCallback = new Handler() {
@@ -56,14 +65,16 @@ public class GetGrsInfoClass {
 			case TICKET_REQUEST:
 				getLogedSession((Map<String, String>) msg.obj);
 				break;
-			case PAGE_REQUEST:				
+			case PAGE_REQUEST:
+				coursesData = (ArrayList<Course>) msg.obj;
+				storeCoursesList ();
 				break;
 			}
 		}
 	};
 	
-	public GetGrsInfoClass () {
-		
+	public GetGrsInfoClass (Context context) {
+		this.context = context;
 	}
 	
 	public boolean getClassesList() {
@@ -83,14 +94,119 @@ public class GetGrsInfoClass {
 		return false;
 	}
 	
-	public boolean storeClassesList () {
-		SQLiteDatabase db = SQLiteDatabase.openOrCreateDatabase("classes.db", null);
+	public boolean storeCoursesList () {
+		CoursesListDbHelper dbHelper = new CoursesListDbHelper(context, DB_NAME, null, 1);
+		SQLiteDatabase db = dbHelper.getWritableDatabase();
+		ContentValues cv = new ContentValues();
+		for (Course c : coursesData){
+			cv.clear();
+			cv.put("id", c.courseNum);
+			cv.put("teacher", c.teacher);
+			cv.put("name", c.name);
+			db.replace(CoursesListDbHelper.COURSES_TABLE_NAME, null, cv);
+			for (Course.EachClass each : c.classes) {
+				cv.clear();
+				cv.put("id", c.courseNum);
+				cv.put("semester", each.semester.ordinal());
+				cv.put("location", each.location);
+				cv.put("fre", each.fre.ordinal());
+				cv.put("start", each.startClass);
+				cv.put("end", each.endClass);
+				cv.put("dayofweek", each.day.ordinal());
+				db.replace(CoursesListDbHelper.CLASSES_TABLE_NAME, null, cv);
+			}
+		}
 		
 		
-		
-		db.close();
-		
+		db.close();	
+		state = State.DONE;
 		return false;
+	}
+	
+	public ArrayList<HashMap <String, Object>> getCoursesOfOneDay (DayOfTheWeek day, Semester semester) {
+		ArrayList<HashMap <String, Object>> classesOneDay = new ArrayList<HashMap <String, Object>>();	
+		Cursor coursesCursor = null;
+		Cursor classesCursor = null;
+		
+		CoursesListDbHelper dbHelper = new CoursesListDbHelper(context, DB_NAME, null, 1);
+		SQLiteDatabase db = dbHelper.getReadableDatabase();
+		
+		String[] sectionStr = new String[2];
+		sectionStr[0] = Integer.toString(day.ordinal());
+		sectionStr[1] = Integer.toString(semester.ordinal());
+		classesCursor = db.query(CoursesListDbHelper.CLASSES_TABLE_NAME, 
+				null, "dayofweek = ? AND semester = ?", sectionStr, null, null, "start");
+		
+		while (classesCursor.moveToNext()) {
+			String[] classSectionStr = new String[1];
+			classSectionStr[0] = classesCursor.getString(0);
+			coursesCursor = db.query(CoursesListDbHelper.COURSES_TABLE_NAME, 
+					null, "id = ?", classSectionStr, null, null, null);
+			HashMap <String, Object> oneClass = new HashMap <String, Object>();
+			
+			if (coursesCursor.moveToFirst()) {
+				oneClass.put("name", coursesCursor.getString(1));
+				oneClass.put("teacher", coursesCursor.getString(2));
+			}
+			coursesCursor.close();
+			
+			oneClass.put("location", classesCursor.getString(1));
+			oneClass.put("start", classesCursor.getInt(4));
+			oneClass.put("end", classesCursor.getInt(5));
+			oneClass.put("fre", Frequent.values()[classesCursor.getInt(6)]);
+			
+			classesOneDay.add(oneClass);
+		}
+		
+		classesCursor.close();
+		db.close();
+		return classesOneDay;
+	}
+	
+	public ArrayList<Course> getAllCoursesList () {
+		if (state == State.DONE) {
+			return coursesData;
+		}
+		else {
+			return getAllCoursesFromDb();
+		}
+	}
+	
+	private ArrayList<Course> getAllCoursesFromDb (){
+		ArrayList <Course> coursesFromDb = new ArrayList<Course>();
+		Cursor coursesCursor = null;
+		Cursor classesCursor = null;
+		
+		CoursesListDbHelper dbHelper = new CoursesListDbHelper(context, DB_NAME, null, 1);
+		SQLiteDatabase db = dbHelper.getReadableDatabase();
+		coursesCursor = db.query(CoursesListDbHelper.COURSES_TABLE_NAME, 
+				null, null, null, null, null, null);
+		while (coursesCursor.moveToNext()) {
+			Course mCourse = new Course();
+			mCourse.courseNum = coursesCursor.getString(0);
+			mCourse.name = coursesCursor.getString(1);
+			mCourse.teacher = coursesCursor.getString(2);
+			String[] sectionStr = new String[1];
+			sectionStr[0] = mCourse.courseNum;
+			classesCursor = db.query(CoursesListDbHelper.CLASSES_TABLE_NAME, 
+					null, "id = ?", sectionStr, null, null, null);
+			while (classesCursor.moveToNext()) {
+				EachClass each = mCourse.new EachClass();
+				each.location = classesCursor.getString(1);
+				each.day = DayOfTheWeek.values()[classesCursor.getInt(2)];
+				each.semester = Semester.values()[classesCursor.getInt(3)];
+				each.startClass = classesCursor.getInt(4);
+				each.endClass = classesCursor.getInt(5);
+				each.fre = Frequent.values()[classesCursor.getInt(6)];	
+				mCourse.classes.add(each);
+			}
+			classesCursor.close();
+			coursesFromDb.add(mCourse);
+		}
+		coursesCursor.close();
+		db.close();
+		return coursesFromDb;
+		
 	}
 	
 	private boolean preLogin() {

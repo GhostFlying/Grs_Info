@@ -24,7 +24,7 @@ public class Course {
 	int endClass = -1;*/
 	
 	
-	private class EachClass {
+	public class EachClass {
 		String location = null;
 		String freStr = null;
 		String dayStr = null;
@@ -117,15 +117,15 @@ public class Course {
 		return true;
 	}
 	
-	private enum Semester {
+	enum Semester {
 		SPRING, SUMMER, AUTUMN, WINTER, SPRING_SUMMER, AUTUMN_WINTER, NONE
 	}
 	
-	private enum DayOfTheWeek {
+	enum DayOfTheWeek {
 		SUN, MON, TUE, WED, THU, FRI, SAT
 	}
 	
-	private enum Frequent{
+	enum Frequent{
 		EVERY_WEEK, ODD_WEEK, EVEN_WEEK
 	}
 	

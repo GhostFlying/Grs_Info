@@ -5,9 +5,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
 
-public class ClassesListDbHelper extends SQLiteOpenHelper {
+public class CoursesListDbHelper extends SQLiteOpenHelper {
+	
+	public final static String COURSES_TABLE_NAME = "courses";
+	public final static String CLASSES_TABLE_NAME = "classes";
 
-	public ClassesListDbHelper(Context context, String name,
+	public CoursesListDbHelper(Context context, String name,
 			CursorFactory factory, int version) {
 		super(context, name, factory, version);
 		// TODO Auto-generated constructor stub
@@ -16,10 +19,10 @@ public class ClassesListDbHelper extends SQLiteOpenHelper {
 	@Override
 	public void onCreate(SQLiteDatabase db) {
 		// TODO Auto-generated method stub
-		String createCoursesSql = "CREATE TABLE courses (id VARCHAR PRIMARY KEY, name VARCHAR," +
-					"teacher VARCHAR)";
-		String createClassesSql = "CREATE TABLE classes (id VARCHAR PRIMARY KEY, location VARCHAR," +
-					"dayofweek INTEGER, semester INTEGER, start INTEGER, end INTEGER, fre INTEGER)";
+		String createCoursesSql = "CREATE TABLE " + COURSES_TABLE_NAME + " (id VARCHAR PRIMARY KEY," +
+					"name VARCHAR, teacher VARCHAR)";
+		String createClassesSql = "CREATE TABLE " + CLASSES_TABLE_NAME + " (id VARCHAR ," +
+					"location VARCHAR, dayofweek INTEGER, semester INTEGER, start INTEGER, end INTEGER, fre INTEGER)";
 		
 		db.execSQL(createClassesSql);
 		db.execSQL(createCoursesSql);

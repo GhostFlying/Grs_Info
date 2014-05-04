@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.ghostflying.grsinformation.Course.DayOfTheWeek;
+import com.ghostflying.grsinformation.Course.Semester;
 import com.github.kevinsawicki.http.HttpRequest;
 
 import android.app.Activity;
@@ -55,8 +57,10 @@ public class MainActivity extends Activity {
 		mViewPager = (ViewPager) findViewById(R.id.pager);
 		mViewPager.setAdapter(mSectionsPagerAdapter);
 		//new getResponse().execute(null, null, null);
-		GetGrsInfoClass mGetGrsInfoClass = new GetGrsInfoClass();
-		mGetGrsInfoClass.getClassesList();
+		GetGrsInfoClass mGetGrsInfoClass = new GetGrsInfoClass(this);
+		//mGetGrsInfoClass.getClassesList();
+		//mGetGrsInfoClass.getAllCoursesList();
+		mGetGrsInfoClass.getCoursesOfOneDay(DayOfTheWeek.MON, Semester.SUMMER);
 	}
 
 	@Override
