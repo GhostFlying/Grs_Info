@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -77,6 +79,16 @@ public class GetGrsInfoClass {
 		else {
 			preLogin();
 		}
+		
+		return false;
+	}
+	
+	public boolean storeClassesList () {
+		SQLiteDatabase db = SQLiteDatabase.openOrCreateDatabase("classes.db", null);
+		
+		
+		
+		db.close();
 		
 		return false;
 	}
