@@ -11,18 +11,6 @@ public class Course {
 	String courseNum;
 	ArrayList<EachClass> classes = new ArrayList<EachClass>();
 	
-/*	String location = null;
-	String freStr = null;
-	String dayStr = null;
-	String semesterStr = null;
-	String classStr;
-
-	Semester semester = null;
-	DayOfTheWeek day = null;
-	Frequent fre = null;
-	int startClass = -1;
-	int endClass = -1;*/
-	
 	
 	public class EachClass {
 		String location = null;
@@ -32,7 +20,7 @@ public class Course {
 		String classStr;
 
 		Semester semester = null;
-		DayOfTheWeek day = null;
+		int day = -1;
 		Frequent fre = null;
 		int startClass = -1;
 		int endClass = -1;
@@ -78,7 +66,17 @@ public class Course {
 			}
 		}
 		
-		public void dayToEnum () {
+		public String dayToStr () {
+			String[] daysOfWeek = {"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"};
+			return daysOfWeek[day];
+		}
+		
+		public String semesterToStr () {
+			String[] semesters = {"春学期", "夏学期", "秋学期", "冬学期", "春夏学期", "秋冬学期", "其它"};
+			return semesters[semester.ordinal()];
+		}
+		
+/*		public void dayToEnum () {
 			switch (dayStr) {
 			case "星期日":
 				day = DayOfTheWeek.SUN;
@@ -102,7 +100,7 @@ public class Course {
 				day = DayOfTheWeek.SAT;
 				break;
 			}
-		}
+		}*/
 	}
 	
 	public boolean addOneClass (String semesterStr, String freStr, String dayStr, String location, String classStr){
@@ -121,9 +119,6 @@ public class Course {
 		SPRING, SUMMER, AUTUMN, WINTER, SPRING_SUMMER, AUTUMN_WINTER, NONE
 	}
 	
-	enum DayOfTheWeek {
-		SUN, MON, TUE, WED, THU, FRI, SAT
-	}
 	
 	enum Frequent{
 		EVERY_WEEK, ODD_WEEK, EVEN_WEEK
@@ -133,11 +128,27 @@ public class Course {
 		for (EachClass e: classes) {
 			e.semesterToEnum();
 			e.freToEnum();
-			e.dayToEnum();
+			//e.dayToEnum();
 			e.classStrToInt();
 		}
 		
 		return true;
+	}
+	
+	public static String freToStr (Frequent fre) {
+		String freS = "";
+		switch (fre){
+		case EVERY_WEEK:
+			freS = "每周";
+			break;
+		case ODD_WEEK:
+			freS = "单周";
+			break;
+		case EVEN_WEEK:
+			freS = "双周";
+			break;
+		}
+		return freS;
 	}
 	
 }

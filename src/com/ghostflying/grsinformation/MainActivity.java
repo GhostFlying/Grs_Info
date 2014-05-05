@@ -1,26 +1,16 @@
 package com.ghostflying.grsinformation;
 
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import com.ghostflying.grsinformation.Course.DayOfTheWeek;
 import com.ghostflying.grsinformation.Course.Semester;
-import com.github.kevinsawicki.http.HttpRequest;
-
 import android.app.Activity;
-import android.app.ActionBar;
 import android.app.Fragment;
 import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.support.v13.app.FragmentPagerAdapter;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
-import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -43,24 +33,66 @@ public class MainActivity extends Activity {
 	 * The {@link ViewPager} that will host the section contents.
 	 */
 	ViewPager mViewPager;
+	
+	//ArrayList<HashMap <String, Object>> oneDayClasses;
+	
+	OneDayClassesFragment mOneDayClassesFragment;
+	ArrayList<HashMap <String, Object>> todayClasses; 
+	GetGrsInfoClass mGetGrsInfoClass;
+	AllCheckedCoursesFragment mAllCheckedCoursesFragment;
+	ArrayList<Course> coursesData;
+	
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-
+		
+		queryTodayClasses();
+		queryAllCourses(true);
+		
 		// Create the adapter that will return a fragment for each of the three
 		// primary sections of the activity.
 		mSectionsPagerAdapter = new SectionsPagerAdapter(getFragmentManager());
-
+		
 		// Set up the ViewPager with the sections adapter.
 		mViewPager = (ViewPager) findViewById(R.id.pager);
 		mViewPager.setAdapter(mSectionsPagerAdapter);
 		//new getResponse().execute(null, null, null);
-		GetGrsInfoClass mGetGrsInfoClass = new GetGrsInfoClass(this);
+		
 		//mGetGrsInfoClass.getClassesList();
 		//mGetGrsInfoClass.getAllCoursesList();
-		mGetGrsInfoClass.getCoursesOfOneDay(DayOfTheWeek.MON, Semester.SUMMER);
+		
+		
+		
+		
+	}
+	
+	protected void onStart(){
+		super.onStart();
+		queryTodayClasses();
+	}
+	
+	private void queryTodayClasses() {
+		Calendar calendar = Calendar.getInstance();
+		if (mGetGrsInfoClass == null) {
+			mGetGrsInfoClass = new GetGrsInfoClass(this);
+		}
+		
+		todayClasses = mGetGrsInfoClass.getCoursesOfOneDay(calendar.get(7) - 1, Semester.SUMMER);
+		if (mOneDayClassesFragment != null && !mOneDayClassesFragment.isDetached()) {
+			mOneDayClassesFragment.dataUpdated(todayClasses);
+		}
+	}
+	
+	private void queryAllCourses(boolean checked) {
+		if (mGetGrsInfoClass == null) {
+			mGetGrsInfoClass = new GetGrsInfoClass(this);
+		}
+		coursesData = mGetGrsInfoClass.getAllCoursesList(checked);
+		if (mAllCheckedCoursesFragment != null && !mAllCheckedCoursesFragment.isDetached()) {
+			mAllCheckedCoursesFragment.dataUpdated(coursesData);
+		}
 	}
 
 	@Override
@@ -98,6 +130,14 @@ public class MainActivity extends Activity {
 			// getItem is called to instantiate the fragment for the given page.
 			// Return a PlaceholderFragment (defined as a static inner class
 			// below).
+			switch (position) {
+			case 0:
+				mOneDayClassesFragment = OneDayClassesFragment.newInstance(todayClasses);
+				return mOneDayClassesFragment;
+			case 1:
+				mAllCheckedCoursesFragment = AllCheckedCoursesFragment.newInstance(coursesData);
+				return mAllCheckedCoursesFragment;
+			}
 			return PlaceholderFragment.newInstance(position + 1);
 		}
 

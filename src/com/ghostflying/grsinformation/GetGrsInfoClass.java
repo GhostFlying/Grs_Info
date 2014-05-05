@@ -16,7 +16,6 @@ import android.os.Message;
 import android.util.Log;
 
 import com.ghostflying.grsinformation.Course;
-import com.ghostflying.grsinformation.Course.DayOfTheWeek;
 import com.ghostflying.grsinformation.Course.EachClass;
 import com.ghostflying.grsinformation.Course.Frequent;
 import com.ghostflying.grsinformation.Course.Semester;
@@ -94,6 +93,8 @@ public class GetGrsInfoClass {
 		return false;
 	}
 	
+	
+	
 	public boolean storeCoursesList () {
 		CoursesListDbHelper dbHelper = new CoursesListDbHelper(context, DB_NAME, null, 1);
 		SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -112,7 +113,7 @@ public class GetGrsInfoClass {
 				cv.put("fre", each.fre.ordinal());
 				cv.put("start", each.startClass);
 				cv.put("end", each.endClass);
-				cv.put("dayofweek", each.day.ordinal());
+				cv.put("dayofweek", each.day);
 				db.replace(CoursesListDbHelper.CLASSES_TABLE_NAME, null, cv);
 			}
 		}
@@ -123,7 +124,7 @@ public class GetGrsInfoClass {
 		return false;
 	}
 	
-	public ArrayList<HashMap <String, Object>> getCoursesOfOneDay (DayOfTheWeek day, Semester semester) {
+	public ArrayList<HashMap <String, Object>> getCoursesOfOneDay (int day, Semester semester) {
 		ArrayList<HashMap <String, Object>> classesOneDay = new ArrayList<HashMap <String, Object>>();	
 		Cursor coursesCursor = null;
 		Cursor classesCursor = null;
@@ -132,7 +133,7 @@ public class GetGrsInfoClass {
 		SQLiteDatabase db = dbHelper.getReadableDatabase();
 		
 		String[] sectionStr = new String[2];
-		sectionStr[0] = Integer.toString(day.ordinal());
+		sectionStr[0] = Integer.toString(day);
 		sectionStr[1] = Integer.toString(semester.ordinal());
 		classesCursor = db.query(CoursesListDbHelper.CLASSES_TABLE_NAME, 
 				null, "dayofweek = ? AND semester = ?", sectionStr, null, null, "start");
@@ -163,16 +164,16 @@ public class GetGrsInfoClass {
 		return classesOneDay;
 	}
 	
-	public ArrayList<Course> getAllCoursesList () {
-		if (state == State.DONE) {
+	public ArrayList<Course> getAllCoursesList (boolean checked) {
+		if (state == State.DONE && !checked) {
 			return coursesData;
 		}
 		else {
-			return getAllCoursesFromDb();
+			return getAllCoursesFromDb(checked);
 		}
 	}
 	
-	private ArrayList<Course> getAllCoursesFromDb (){
+	private ArrayList<Course> getAllCoursesFromDb (boolean checked){
 		ArrayList <Course> coursesFromDb = new ArrayList<Course>();
 		Cursor coursesCursor = null;
 		Cursor classesCursor = null;
@@ -193,7 +194,7 @@ public class GetGrsInfoClass {
 			while (classesCursor.moveToNext()) {
 				EachClass each = mCourse.new EachClass();
 				each.location = classesCursor.getString(1);
-				each.day = DayOfTheWeek.values()[classesCursor.getInt(2)];
+				each.day = classesCursor.getInt(2);
 				each.semester = Semester.values()[classesCursor.getInt(3)];
 				each.startClass = classesCursor.getInt(4);
 				each.endClass = classesCursor.getInt(5);
@@ -201,7 +202,9 @@ public class GetGrsInfoClass {
 				mCourse.classes.add(each);
 			}
 			classesCursor.close();
-			coursesFromDb.add(mCourse);
+			if (!(classesCursor.getCount() < 1 && checked)) {
+				coursesFromDb.add(mCourse);
+			}
 		}
 		coursesCursor.close();
 		db.close();
