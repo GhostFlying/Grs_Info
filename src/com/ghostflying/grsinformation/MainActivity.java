@@ -58,20 +58,9 @@ public class MainActivity extends Activity {
 		// Set up the ViewPager with the sections adapter.
 		mViewPager = (ViewPager) findViewById(R.id.pager);
 		mViewPager.setAdapter(mSectionsPagerAdapter);
-		//new getResponse().execute(null, null, null);
-		
-		//mGetGrsInfoClass.getClassesList();
-		//mGetGrsInfoClass.getAllCoursesList();
-		
-		
-		
-		
 	}
 	
-	protected void onStart(){
-		super.onStart();
-		queryTodayClasses();
-	}
+
 	
 	private void queryTodayClasses() {
 		Calendar calendar = Calendar.getInstance();

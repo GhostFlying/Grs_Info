@@ -1,10 +1,11 @@
 package com.ghostflying.grsinformation;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Course {
+public class Course implements Serializable{
 	
 	String name = null;
 	String teacher = null;
@@ -12,7 +13,7 @@ public class Course {
 	ArrayList<EachClass> classes = new ArrayList<EachClass>();
 	
 	
-	public class EachClass {
+	public class EachClass implements Serializable{
 		String location = null;
 		String freStr = null;
 		String dayStr = null;
