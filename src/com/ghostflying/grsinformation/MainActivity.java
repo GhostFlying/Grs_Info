@@ -22,6 +22,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 public class MainActivity extends Activity 
@@ -97,7 +98,7 @@ public class MainActivity extends Activity
 	@Override
 	public void onUserInfoSetted() {
 		// TODO Auto-generated method stub
-		checkQueryClass ();
+		checkQueryClass ();		
 		if (mGetGrsInfoClass.checkUserInfo()){
 			mGetGrsInfoClass.getClassesList();
 		}

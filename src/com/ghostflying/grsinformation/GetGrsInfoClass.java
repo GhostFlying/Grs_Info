@@ -16,6 +16,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.ghostflying.grsinformation.Course;
 import com.ghostflying.grsinformation.Course.EachClass;
@@ -43,6 +44,7 @@ public class GetGrsInfoClass {
 	final int LOGIN_REQUEST = 2;
 	final int TICKET_REQUEST = 3;
 	final int PAGE_REQUEST = 4;
+	final int PASSWORD_ERR = 5;
 	
 	private RequestThread requestThread = null; 
 	
@@ -75,6 +77,9 @@ public class GetGrsInfoClass {
 			case PAGE_REQUEST:
 				coursesData = (ArrayList<Course>) msg.obj;
 				storeCoursesList ();
+				break;
+			case PASSWORD_ERR:
+				Toast.makeText(context, "用户名/密码错误，情检查", Toast.LENGTH_SHORT).show();
 				break;
 			}
 		}
@@ -393,8 +398,13 @@ public class GetGrsInfoClass {
 			if (returnType == LOGIN_REQUEST && returnCode != 302) {
 				state = GetGrsInfoClass.State.NONE;
 				Log.e(TAG, "Error when login request.");
+				if (returnCode == 200) {
+					returnMessage = Message.obtain(RequestCallback, PASSWORD_ERR, null);
+					returnMessage.sendToTarget();	
+				}
 				return;
 			}
+			
 			
 			if (returnType == TICKET_REQUEST && returnCode != 302) {
 				state = GetGrsInfoClass.State.NONE;
