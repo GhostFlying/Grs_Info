@@ -30,16 +30,16 @@ public class AllCheckedCoursesFragment extends Fragment {
 	
 	public static AllCheckedCoursesFragment newInstance(ArrayList<Course> data){
 		AllCheckedCoursesFragment fragment = new AllCheckedCoursesFragment();
-		Bundle args = new Bundle();
+/*		Bundle args = new Bundle();
 		args.putSerializable(COURSES_DATA, data);
-		fragment.setArguments(args);
+		fragment.setArguments(args);*/
 		return fragment;
 	}
 	
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
 		
-		coursesData = (ArrayList<Course>) getArguments().getSerializable(COURSES_DATA);
+		coursesData = MainActivity.coursesData;
 		return inflater.inflate(R.layout.all_courses_listview, container, false);
 	}
 	

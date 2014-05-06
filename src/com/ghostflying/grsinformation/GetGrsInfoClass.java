@@ -7,8 +7,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
@@ -24,12 +26,14 @@ import com.github.kevinsawicki.http.HttpRequest;
 public class GetGrsInfoClass {
 	private Boolean D = true;
 	private String TAG = this.getClass().getName();
-	private String username = DebugInfo.username;
-	private String password = DebugInfo.password;
+	private String username = "";
+	private String password = "";
 	
 	private State state = State.NONE;
+	private UserInfoState userInfoState = UserInfoState.NONE;
 	private Context context = null;
 	private ArrayList<Course> coursesData = null;
+	DataChangeListener mCallback;
 	
 	final String LOGIN_REQUEST_URL = "https://grs.zju.edu.cn/cas/login?service=http%3A%2F%2Fgrs.zju.edu.cn%2Fpy%2Fpage%2Fstudent%2Fgrkcb.htm";
 	final String CLASS_LIST_URL = "http://grs.zju.edu.cn/py/page/student/grkcgl.htm";
@@ -50,6 +54,10 @@ public class GetGrsInfoClass {
 	
 	private enum State {
 		NONE, LOGED, DONE
+	}
+	
+	private enum UserInfoState {
+		SETTED, NONE
 	}
 	
 	private Handler RequestCallback = new Handler() {
@@ -74,6 +82,22 @@ public class GetGrsInfoClass {
 	
 	public GetGrsInfoClass (Context context) {
 		this.context = context;
+		mCallback = (DataChangeListener) context;
+	}
+	
+	public boolean checkUserInfo () {
+		SharedPreferences pre = context.getSharedPreferences("user", Activity.MODE_PRIVATE);
+		username = pre.getString("username", "");
+		password = pre.getString("password", "");
+		if (password.length() > 0) {
+			userInfoState = UserInfoState.SETTED;
+			return true;
+		}
+		return false;
+	}
+	
+	public interface DataChangeListener {
+		public void onDbChanged ();
 	}
 	
 	public boolean getClassesList() {
@@ -107,6 +131,7 @@ public class GetGrsInfoClass {
 			db.replace(CoursesListDbHelper.COURSES_TABLE_NAME, null, cv);
 			for (Course.EachClass each : c.classes) {
 				cv.clear();
+				cv.put("c_id", c.courseNum + c.classes.indexOf(each));
 				cv.put("id", c.courseNum);
 				cv.put("semester", each.semester.ordinal());
 				cv.put("location", each.location);
@@ -116,10 +141,9 @@ public class GetGrsInfoClass {
 				cv.put("dayofweek", each.day);
 				db.replace(CoursesListDbHelper.CLASSES_TABLE_NAME, null, cv);
 			}
-		}
-		
-		
+		}		
 		db.close();	
+		mCallback.onDbChanged();
 		state = State.DONE;
 		return false;
 	}

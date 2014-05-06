@@ -4,13 +4,19 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
+
 import com.ghostflying.grsinformation.Course.Semester;
+import com.ghostflying.grsinformation.GetGrsInfoClass.DataChangeListener;
+import com.ghostflying.grsinformation.UserInfoSettingFragment.UserInfoSettedListener;
+
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,7 +24,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity 
+		implements UserInfoSettedListener, DataChangeListener{
 
 	/**
 	 * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -34,13 +41,13 @@ public class MainActivity extends Activity {
 	 */
 	ViewPager mViewPager;
 	
-	//ArrayList<HashMap <String, Object>> oneDayClasses;
 	
 	OneDayClassesFragment mOneDayClassesFragment;
-	ArrayList<HashMap <String, Object>> todayClasses; 
+	public static ArrayList<HashMap <String, Object>> todayClasses; 
+	public static ArrayList<Course> coursesData;
 	GetGrsInfoClass mGetGrsInfoClass;
 	AllCheckedCoursesFragment mAllCheckedCoursesFragment;
-	ArrayList<Course> coursesData;
+	
 	
 
 	@Override
@@ -48,8 +55,7 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
-		queryTodayClasses();
-		queryAllCourses(true);
+		
 		
 		// Create the adapter that will return a fragment for each of the three
 		// primary sections of the activity.
@@ -58,27 +64,64 @@ public class MainActivity extends Activity {
 		// Set up the ViewPager with the sections adapter.
 		mViewPager = (ViewPager) findViewById(R.id.pager);
 		mViewPager.setAdapter(mSectionsPagerAdapter);
+		
+		queryTodayClasses();
+		queryAllCourses(true);
+		if (!isUserSetted()) {
+			mViewPager.setCurrentItem(2, true);
+		}		
 	}
 	
+	private boolean isUserSetted () {
+		checkQueryClass ();
+		if (coursesData.isEmpty()) {
+			return false;
+		}
+		return mGetGrsInfoClass.checkUserInfo();
+	}
+	
+	private void checkQueryClass () {
+		if (mGetGrsInfoClass == null) {
+			mGetGrsInfoClass = new GetGrsInfoClass(this);
+		}
+	}
+	
+
+	@Override
+	public void onDbChanged() {
+		// TODO Auto-generated method stub		
+		queryTodayClasses();
+		queryAllCourses(true);
+	}
+	
+	@Override
+	public void onUserInfoSetted() {
+		// TODO Auto-generated method stub
+		checkQueryClass ();
+		if (mGetGrsInfoClass.checkUserInfo()){
+			mGetGrsInfoClass.getClassesList();
+		}
+		
+	}
 
 	
 	private void queryTodayClasses() {
 		Calendar calendar = Calendar.getInstance();
-		if (mGetGrsInfoClass == null) {
-			mGetGrsInfoClass = new GetGrsInfoClass(this);
-		}
-		
+		checkQueryClass ();		
 		todayClasses = mGetGrsInfoClass.getCoursesOfOneDay(calendar.get(7) - 1, Semester.SUMMER);
-		if (mOneDayClassesFragment != null && !mOneDayClassesFragment.isDetached()) {
+		//((OneDayClassesFragment)mSectionsPagerAdapter.getItem(0)).dataUpdated(todayClasses);
+		if (mOneDayClassesFragment != null) {
 			mOneDayClassesFragment.dataUpdated(todayClasses);
 		}
+		
 	}
 	
 	private void queryAllCourses(boolean checked) {
-		if (mGetGrsInfoClass == null) {
-			mGetGrsInfoClass = new GetGrsInfoClass(this);
-		}
+		checkQueryClass ();	
 		coursesData = mGetGrsInfoClass.getAllCoursesList(checked);
+		//((AllCheckedCoursesFragment)mSectionsPagerAdapter.getItem(1)).dataUpdated(coursesData);
+		
+		
 		if (mAllCheckedCoursesFragment != null && !mAllCheckedCoursesFragment.isDetached()) {
 			mAllCheckedCoursesFragment.dataUpdated(coursesData);
 		}
@@ -126,6 +169,8 @@ public class MainActivity extends Activity {
 			case 1:
 				mAllCheckedCoursesFragment = AllCheckedCoursesFragment.newInstance(coursesData);
 				return mAllCheckedCoursesFragment;
+			case 2:
+				return new UserInfoSettingFragment();
 			}
 			return PlaceholderFragment.newInstance(position + 1);
 		}
@@ -187,5 +232,7 @@ public class MainActivity extends Activity {
 			return rootView;
 		}
 	}
+
+
 
 }

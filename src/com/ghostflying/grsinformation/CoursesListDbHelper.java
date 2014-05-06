@@ -22,7 +22,8 @@ public class CoursesListDbHelper extends SQLiteOpenHelper {
 		String createCoursesSql = "CREATE TABLE " + COURSES_TABLE_NAME + " (id VARCHAR PRIMARY KEY," +
 					"name VARCHAR, teacher VARCHAR)";
 		String createClassesSql = "CREATE TABLE " + CLASSES_TABLE_NAME + " (id VARCHAR ," +
-					"location VARCHAR, dayofweek INTEGER, semester INTEGER, start INTEGER, end INTEGER, fre INTEGER)";
+					"location VARCHAR, dayofweek INTEGER, semester INTEGER, start INTEGER, end INTEGER, "
+					+ "fre INTEGER, c_id VARCAHR PRIMARY KEY)";
 		
 		db.execSQL(createClassesSql);
 		db.execSQL(createCoursesSql);

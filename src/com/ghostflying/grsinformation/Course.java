@@ -77,31 +77,31 @@ public class Course implements Serializable{
 			return semesters[semester.ordinal()];
 		}
 		
-/*		public void dayToEnum () {
+		public void dayToInteger () {
 			switch (dayStr) {
 			case "星期日":
-				day = DayOfTheWeek.SUN;
+				day = 0;
 				break;
 			case "星期一":
-				day = DayOfTheWeek.MON;
+				day = 1;
 				break;
 			case "星期二":
-				day = DayOfTheWeek.TUE;
+				day = 2;
 				break;
 			case "星期三":
-				day = DayOfTheWeek.WED;
+				day = 3;
 				break;
 			case "星期四":
-				day = DayOfTheWeek.THU;
+				day = 4;
 				break;
 			case "星期五":
-				day = DayOfTheWeek.FRI;
+				day = 5;
 				break;
 			case "星期六":
-				day = DayOfTheWeek.SAT;
+				day = 6;
 				break;
 			}
-		}*/
+		}
 	}
 	
 	public boolean addOneClass (String semesterStr, String freStr, String dayStr, String location, String classStr){
@@ -129,7 +129,7 @@ public class Course implements Serializable{
 		for (EachClass e: classes) {
 			e.semesterToEnum();
 			e.freToEnum();
-			//e.dayToEnum();
+			e.dayToInteger();
 			e.classStrToInt();
 		}
 		

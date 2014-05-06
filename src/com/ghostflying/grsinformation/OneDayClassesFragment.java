@@ -29,16 +29,18 @@ public class OneDayClassesFragment extends Fragment {
 	public static OneDayClassesFragment newInstance(ArrayList<HashMap <String, Object>> data) {
 		OneDayClassesFragment fragment = new OneDayClassesFragment();
 		
-		Bundle args = new Bundle();		
+/*		Bundle args = new Bundle();		
 		args.putSerializable(LIST_DATA, data);
-		fragment.setArguments(args);
+		fragment.setArguments(args);*/
 		return fragment;		
 	}
 	
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
-		
-		classesData = (ArrayList<HashMap<String, Object>>) getArguments().getSerializable(LIST_DATA);
+/*		if (classesData == null) {
+			classesData = (ArrayList<HashMap<String, Object>>) getArguments().getSerializable(LIST_DATA);
+		}*/
+		classesData = MainActivity.todayClasses;
 		return inflater.inflate(R.layout.one_day_listview_main, container, false);
 	}
 
@@ -51,6 +53,7 @@ public class OneDayClassesFragment extends Fragment {
 	
 	public void dataUpdated (ArrayList<HashMap <String, Object>> newData) {
 		if (cards != null) {
+			classesData = newData;
 			transferData(newData, cards);
 			cardAdapter.notifyDataSetChanged();
 		}
