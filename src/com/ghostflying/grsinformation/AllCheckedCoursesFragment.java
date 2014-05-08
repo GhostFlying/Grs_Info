@@ -20,6 +20,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 public class AllCheckedCoursesFragment extends Fragment {
 	private static final String COURSES_DATA = "courses_data";
@@ -105,7 +106,7 @@ public class AllCheckedCoursesFragment extends Fragment {
         private void init(){
 
             //Create a CardHeader
-            CardHeader header = new CardHeader(getActivity());
+        	CustomHeader header = new CustomHeader(getActivity());
 
             //Set the header title
             header.setTitle(mTitleHeader);
@@ -117,4 +118,12 @@ public class AllCheckedCoursesFragment extends Fragment {
         }
 
     }
+	
+	public class CustomHeader extends CardHeader {
+
+	    public CustomHeader(Context context) {
+	        super(context, R.layout.custom_header_layout);
+	    }
+
+	}
 }

@@ -63,10 +63,10 @@ public class OneDayClassesFragment extends Fragment {
 		newData.clear();
 		for (HashMap<String, Object> eachClass: origin) {
 			String fre = Course.freToStr((Frequent)eachClass.get("fre"));
-			String title = " "+ ((String)eachClass.get("name")) + "\n" +
-					" "+ String.valueOf((int)eachClass.get("start")) + "-" +
-					String.valueOf((int)eachClass.get("end"));
-			String content = (String) eachClass.get("location") + "\n" +
+			String title = ((String)eachClass.get("name")) ;
+			String content = "\n" + String.valueOf((int)eachClass.get("start")) + "-" +
+					String.valueOf((int)eachClass.get("end")) + "\n" +
+					(String) eachClass.get("location") + "\n" +
 					(String) eachClass.get("teacher") + "\n" +
 					fre;
 			
@@ -102,17 +102,25 @@ public class OneDayClassesFragment extends Fragment {
         private void init(){
 
             //Create a CardHeader
-            CardHeader header = new CardHeader(getActivity());
+        	CustomHeader header = new CustomHeader(getActivity());
 
             //Set the header title
             header.setTitle(mTitleHeader);
-
             
-            addCardHeader(header);
             
-            setTitle(mTitleMain);
+            this.addCardHeader(header);
+            
+            this.setTitle(mTitleMain);
         }
 
     }
+	
+	public class CustomHeader extends CardHeader {
+
+	    public CustomHeader(Context context) {
+	        super(context, R.layout.custom_header_layout);
+	    }
+
+	}
 
 }
