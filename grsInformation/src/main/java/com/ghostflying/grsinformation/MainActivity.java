@@ -1,16 +1,21 @@
 package com.ghostflying.grsinformation;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.os.Bundle;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v4.widget.DrawerLayout;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import com.ghostflying.grsinformation.Course.Semester;
@@ -45,32 +50,77 @@ public class MainActivity extends Activity
 	public static ArrayList<Course> coursesData;
 	GetGrsInfoClass mGetGrsInfoClass;
 	AllCheckedCoursesFragment mAllCheckedCoursesFragment;
-	
+    private DrawerLayout mDrawerLayout;
+    private ListView mDrawerList;
+
+    private int nowSelected = 0;
 	
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
-		
-		
-		
-		// Create the adapter that will return a fragment for each of the three
-		// primary sections of the activity.
-		mSectionsPagerAdapter = new SectionsPagerAdapter(getFragmentManager());
-		
-		// Set up the ViewPager with the sections adapter.
-		mViewPager = (ViewPager) findViewById(R.id.pager);
-		mViewPager.setAdapter(mSectionsPagerAdapter);
-		
+		setContentView(R.layout.root_layout_drawer);
+
+        String[] drawerArray = new String[2];
+        drawerArray[0] = "main";
+        drawerArray[1] = "login";
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mDrawerList = (ListView) findViewById(R.id.left_drawer);
+        mDrawerList.setAdapter(new ArrayAdapter<String>(this,
+                R.layout.drawer_list_item, drawerArray));
+        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
+
+
+
+        mViewPager = (ViewPager) findViewById(R.id.drawer_main);
+
 		queryTodayClasses();
 		queryAllCourses(true);
-		if (!isUserSetted()) {
-			mViewPager.setCurrentItem(2, true);
-		}		
+
+        setUpCoursesView();
 	}
-	
-	private boolean isUserSetted () {
+
+    private class DrawerItemClickListener implements ListView.OnItemClickListener {
+        @Override
+        public void onItemClick(AdapterView parent, View view, int position, long id) {
+            selectItem(position);
+        }
+    }
+
+    private void selectItem(int position) {
+        if (position == nowSelected){
+            mDrawerLayout.closeDrawer(mDrawerList);
+            return;
+        }
+        switch (position){
+            case 0:
+                setUpCoursesView();
+                mDrawerLayout.closeDrawer(mDrawerList);
+                break;
+            case 1:
+                //mOneDayClassesFragment = null;
+                //mAllCheckedCoursesFragment = null;
+                //SettingPagerAdapter mSettingPagerAdapter = new SettingPagerAdapter(getFragmentManager());
+                //mViewPager.setAdapter(mSettingPagerAdapter);
+                //getFragmentManager().beginTransaction().replace(R.id.drawer_main, new UserInfoSettingFragment()).commit();
+                mDrawerLayout.closeDrawer(mDrawerList);
+                break;
+
+        }
+        nowSelected = position;
+    }
+
+    private void setUpCoursesView() {
+        mSectionsPagerAdapter = new SectionsPagerAdapter(getFragmentManager());
+        mViewPager.setAdapter(mSectionsPagerAdapter);
+        if (!isUserSetted()) {
+            mViewPager.setCurrentItem(2, true);
+        }
+    }
+
+
+
+    private boolean isUserSetted () {
 		checkQueryClass ();
 		if (coursesData.isEmpty()) {
 			return false;
@@ -106,7 +156,7 @@ public class MainActivity extends Activity
 	private void queryTodayClasses() {
 		Calendar calendar = Calendar.getInstance();
 		checkQueryClass ();		
-		todayClasses = mGetGrsInfoClass.getCoursesOfOneDay(calendar.get(7) - 1, Semester.SUMMER);
+		todayClasses = mGetGrsInfoClass.getCoursesOfOneDay(calendar.get(Calendar.DAY_OF_WEEK) - 1, Semester.SUMMER);
 		//((OneDayClassesFragment)mSectionsPagerAdapter.getItem(0)).dataUpdated(todayClasses);
 		if (mOneDayClassesFragment != null) {
 			mOneDayClassesFragment.dataUpdated(todayClasses);
@@ -145,6 +195,28 @@ public class MainActivity extends Activity
 		return super.onOptionsItemSelected(item);
 	}
 
+    public class SettingPagerAdapter extends  FragmentPagerAdapter {
+
+        public SettingPagerAdapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        @Override
+        public Fragment getItem(int position) {
+            Fragment returnFragment = null;
+            switch (position) {
+                case 0:
+                    returnFragment = new UserInfoSettingFragment();
+            }
+            return  returnFragment;
+        }
+
+        @Override
+        public int getCount() {
+            return 1;
+        }
+    }
+
 	/**
 	 * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
 	 * one of the sections/tabs/pages.
@@ -176,7 +248,7 @@ public class MainActivity extends Activity
 		@Override
 		public int getCount() {
 			// Show 3 total pages.
-			return 3;
+			return 2;
 		}
 
 		@Override
