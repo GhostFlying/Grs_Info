@@ -1,5 +1,6 @@
 package com.ghostflying.grsinformation;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,12 +33,16 @@ public class GetGrsInfoClass {
 	
 	private State state = State.NONE;
 	private UserInfoState userInfoState = UserInfoState.NONE;
+    private ModeState mode = ModeState.MONEY;
 	private Context context = null;
 	private ArrayList<Course> coursesData = null;
+    private ArrayList<MoneyLog> moneyLogData = null;
 	DataChangeListener mCallback;
-	
-	final String LOGIN_REQUEST_URL = "https://grs.zju.edu.cn/cas/login?service=http%3A%2F%2Fgrs.zju.edu.cn%2Fpy%2Fpage%2Fstudent%2Fgrkcb.htm";
+
+    final String COURSE_LOGIN_REQUEST_URL = "https://grs.zju.edu.cn/cas/login?service=http%3A%2F%2Fgrs.zju.edu.cn%2Fpy%2Fpage%2Fstudent%2Fgrkcgl.htm";
+	final String MONEY_LOG_LOGIN_REQUEST_URL = "https://grs.zju.edu.cn/cas/login?service=http%3A%2F%2Fgrs.zju.edu.cn%2Fgangzhu%2Fstudent%2FlogQuery.htm";
 	final String CLASS_LIST_URL = "http://grs.zju.edu.cn/py/page/student/grkcgl.htm";
+    final String MONEY_LOG_URL = "http://grs.zju.edu.cn/gangzhu/student/logQuery.htm";
 	final String DB_NAME = "courses.db";
 	final int DB_VERSION = 1;
 	final int PRE_LOGIN_REQUEST = 1;
@@ -61,6 +66,10 @@ public class GetGrsInfoClass {
 	private enum UserInfoState {
 		SETTED, NONE
 	}
+
+    private enum ModeState {
+        COURSE, MONEY, BOTH
+    }
 	
 	private Handler RequestCallback = new Handler() {
 		public void handleMessage (Message msg) {
@@ -75,8 +84,13 @@ public class GetGrsInfoClass {
 				getLogedSession((Map<String, String>) msg.obj);
 				break;
 			case PAGE_REQUEST:
-				coursesData = (ArrayList<Course>) msg.obj;
-				storeCoursesList ();
+                if (mode == ModeState.COURSE) {
+                    coursesData = (ArrayList<Course>) msg.obj;
+                }
+                else {
+                    moneyLogData = (ArrayList<MoneyLog>) msg.obj;
+                }
+                storeCoursesList ();
 				break;
 			case PASSWORD_ERR:
 				Toast.makeText(context, "用户名/密码错误，情检查", Toast.LENGTH_SHORT).show();
@@ -106,6 +120,7 @@ public class GetGrsInfoClass {
 	}
 	
 	public boolean getClassesList() {
+        mode = ModeState.COURSE;
 		if (state == State.LOGED) {
 			if (requestThread == null) {
 				requestThread = new RequestThread (CLASS_LIST_URL);
@@ -121,39 +136,96 @@ public class GetGrsInfoClass {
 		
 		return false;
 	}
+
+    public boolean getMoneyLog() {
+        if (mode == ModeState.COURSE) {
+            mode = ModeState.MONEY;
+        }
+        if (state == State.LOGED) {
+            if (requestThread == null) {
+                HashMap<String, String> formData = new HashMap<>();
+                formData.put("year-begin", "2010");
+                formData.put("month-begin", "1");
+                formData.put("year-end", "2014");
+                formData.put("month-end", "12");
+                formData.put("submit-query", "查　　询");
+                requestThread = new RequestThread (PAGE_REQUEST, MONEY_LOG_URL, RequestMethod.POST, sessionID, formData);
+                requestThread.start();
+            }
+            else {
+                Log.e(TAG, "Thread is running.");
+            }
+        }
+        else {
+            preLogin();
+        }
+        return false;
+    }
+
+    public void getAllInfo() {
+        mode = ModeState.BOTH;
+        getMoneyLog();
+    }
 	
 	
-	
-	public boolean storeCoursesList () {
+	private boolean storeCoursesList () {
 		CoursesListDbHelper dbHelper = new CoursesListDbHelper(context, DB_NAME, null, 1);
 		SQLiteDatabase db = dbHelper.getWritableDatabase();
         db.delete(CoursesListDbHelper.COURSES_TABLE_NAME, null, null);
         db.delete(CoursesListDbHelper.CLASSES_TABLE_NAME, null, null);
+        db.delete(CoursesListDbHelper.MONEY_LOG_TABLE_NAME, null, null);
 		ContentValues cv = new ContentValues();
-		for (Course c : coursesData){
-			cv.clear();
-			cv.put("id", c.courseNum);
-			cv.put("teacher", c.teacher);
-			cv.put("name", c.name);
-			db.replace(CoursesListDbHelper.COURSES_TABLE_NAME, null, cv);
-			for (Course.EachClass each : c.classes) {
-				cv.clear();
-				cv.put("c_id", c.courseNum + c.classes.indexOf(each));
-				cv.put("id", c.courseNum);
-				cv.put("semester", each.semester.ordinal());
-				cv.put("location", each.location);
-				cv.put("fre", each.fre.ordinal());
-				cv.put("start", each.startClass);
-				cv.put("end", each.endClass);
-				cv.put("dayofweek", each.day);
-				db.replace(CoursesListDbHelper.CLASSES_TABLE_NAME, null, cv);
-			}
-		}
-		db.close();	
-		mCallback.onDbChanged();
+        if (mode == ModeState.COURSE) {
+            for (Course c : coursesData){
+                cv.clear();
+                cv.put("id", c.courseNum);
+                cv.put("teacher", c.teacher);
+                cv.put("name", c.name);
+                db.replace(CoursesListDbHelper.COURSES_TABLE_NAME, null, cv);
+                for (Course.EachClass each : c.classes) {
+                    cv.clear();
+                    cv.put("c_id", c.courseNum + c.classes.indexOf(each));
+                    cv.put("id", c.courseNum);
+                    cv.put("semester", each.semester.ordinal());
+                    cv.put("location", each.location);
+                    cv.put("fre", each.fre.ordinal());
+                    cv.put("start", each.startClass);
+                    cv.put("end", each.endClass);
+                    cv.put("dayofweek", each.day);
+                    db.replace(CoursesListDbHelper.CLASSES_TABLE_NAME, null, cv);
+                }
+            }
+        }
+        else {
+            for (MoneyLog log : moneyLogData) {
+                cv.clear();
+                cv.put("teacherName", log.teacherName);
+                cv.put("teacherCount", log.teacherCount);
+                cv.put("teacherCount2", log.teacherCOunt2);
+                cv.put("teacherState", log.teacherState);
+                cv.put("uniCount", log.uniCount);
+                cv.put("uniCount2", log.uniCount2);
+                cv.put("uniState", log.uniState);
+                cv.put("time", log.time);
+                cv.put("change", log.change);
+                cv.put("summary", log.summary);
+                cv.put("ps", log.ps);
+                db.insert(CoursesListDbHelper.MONEY_LOG_TABLE_NAME, null, cv);
+            }
+        }
+		db.close();
 		state = State.DONE;
+        if (mode == ModeState.BOTH) {
+            mode = ModeState.COURSE;
+            getClassesList();
+        }
+        else {
+            mode = ModeState.MONEY;
+            mCallback.onDbChanged();
+        }
 		return false;
 	}
+
 	
 	public ArrayList<HashMap <String, Object>> getCoursesOfOneDay (int day, Semester semester) {
 		ArrayList<HashMap <String, Object>> classesOneDay = new ArrayList<HashMap <String, Object>>();	
@@ -244,14 +316,28 @@ public class GetGrsInfoClass {
 	}
 	
 	private boolean preLogin() {
+        String url;
+        if (mode == ModeState.COURSE) {
+            url = COURSE_LOGIN_REQUEST_URL;
+        }
+        else {
+            url = MONEY_LOG_LOGIN_REQUEST_URL;
+        }
 		if (requestThread == null) {
-			requestThread = new RequestThread (PRE_LOGIN_REQUEST, LOGIN_REQUEST_URL, RequestMethod.POST);
+			requestThread = new RequestThread (PRE_LOGIN_REQUEST, url, RequestMethod.POST);
 			requestThread.start();
 		}		
 		return false;
 	}
 	
 	private boolean doLogin(Map<String,String> hiddenPara) {
+        String url;
+        if (mode == ModeState.COURSE) {
+            url = COURSE_LOGIN_REQUEST_URL;
+        }
+        else {
+            url = MONEY_LOG_LOGIN_REQUEST_URL;
+        }
 		if (requestThread == null) {
 			Map<String, String> formData = new HashMap<String, String>();
 			formData.put("username", username);
@@ -260,7 +346,7 @@ public class GetGrsInfoClass {
 			formData.put("lt", hiddenPara.get("lt"));
 			formData.put("execution", hiddenPara.get("execution"));
 			formData.put("_eventId", "submit");
-			requestThread = new RequestThread (LOGIN_REQUEST, LOGIN_REQUEST_URL, RequestMethod.POST, hiddenPara.get("cookie"), formData);
+			requestThread = new RequestThread (LOGIN_REQUEST, url, RequestMethod.POST, hiddenPara.get("cookie"), formData);
 			requestThread.start();
 			return true;
 		}		
@@ -283,7 +369,13 @@ public class GetGrsInfoClass {
 		if (D) {
 			Log.d(TAG, "Loged successfully.");
 		}
-		getClassesList();
+        if (mode == ModeState.COURSE) {
+            getClassesList();
+        }
+        else {
+            getMoneyLog();
+        }
+
 		return false;
 	}
 	
@@ -378,6 +470,9 @@ public class GetGrsInfoClass {
 			if (D) {
 				Log.d(TAG, "Return Code: " + String.valueOf(returnCode));
 			}
+
+            body = request.body();
+
 			switch (returnCode) {
 			case 200:
 				break;
@@ -427,7 +522,7 @@ public class GetGrsInfoClass {
 				returnCookie = request.header("Set-Cookie");	
 				returnCookie = parseCookie(returnCookie);
 			}			
-			body = request.body();
+
 			
 			returnValue = new HashMap<String, String>();
 			switch (returnType) {
@@ -446,8 +541,13 @@ public class GetGrsInfoClass {
 				returnValue.put("cookie", returnCookie);
 				returnMessage = Message.obtain(RequestCallback, returnType, returnValue);
 				break;
-			case PAGE_REQUEST:;
-				returnMessage = Message.obtain(RequestCallback, returnType, parseCoursesList(body));
+			case PAGE_REQUEST:
+                if (mode == ModeState.COURSE) {
+                    returnMessage = Message.obtain(RequestCallback, returnType, parseCoursesList(body));
+                }
+                else {
+                    returnMessage = Message.obtain(RequestCallback, returnType, parseMoneyList(body));
+                }
 				break;
 			}
 			
@@ -459,6 +559,74 @@ public class GetGrsInfoClass {
 				Log.d(TAG, "requestThread exit.");
 			}	
 		}
+
+        private ArrayList<MoneyLog> parseMoneyList (String body) {
+            ArrayList<MoneyLog> returnList = new ArrayList<MoneyLog>();
+
+            String[] logBody = body.split("</tr>");
+
+            Pattern teacherNamePattern = Pattern.compile("(?<=name=\"2\">).+?(?=</td>)");
+            Pattern datePattern = Pattern.compile("(?<=name=\"3\">).+?(?=</td>)");
+            Pattern teacherCountPattern = Pattern.compile("(?<=name=\"4\">).+?(?=</td>)");
+            Pattern teacherCount2Pattern = Pattern.compile("(?<=name=\"5\">).+?(?=</td>)");
+            Pattern teacherStatePattern = Pattern.compile("(?<=name=\"6\">).+?(?=</td>)");
+            Pattern uniCountPattern = Pattern.compile("(?<=name=\"7\">).+?(?=</td>)");
+            Pattern uniCount2Pattern = Pattern.compile("(?<=name=\"8\">).+?(?=</td>)");
+            Pattern uniStatePattern = Pattern.compile("(?<=name=\"9\">).+?(?=</td>)");
+            Pattern changePattern = Pattern.compile("(?<=name=\"10\">).*?(?=</td>)");
+            Pattern summaryPattern = Pattern.compile("(?<=name=\"11\">).*?(?=</td>)");
+            Pattern psPattern = Pattern.compile("(?<=name=\"12\">).*?(?=</td>)");
+            for (int i = 1; i< logBody.length - 1; i++) {
+                MoneyLog mLog = new MoneyLog();
+                Matcher m = null;
+                m = teacherNamePattern.matcher(logBody[i]);
+                if (m.find()) {
+                    mLog.teacherName = m.group();
+                }
+                m = datePattern.matcher(logBody[i]);
+                if (m.find()) {
+                    mLog.time = m.group();
+                }
+                m = teacherCountPattern.matcher(logBody[i]);
+                if (m.find()) {
+                    mLog.teacherCount = m.group();
+                }
+                m = teacherCount2Pattern.matcher(logBody[i]);
+                if (m.find()) {
+                    mLog.teacherCOunt2 = m.group();
+                }
+                m = teacherStatePattern.matcher(logBody[i]);
+                if (m.find()) {
+                    mLog.teacherState = m.group();
+                }
+                m = uniCountPattern.matcher(logBody[i]);
+                if (m.find()) {
+                    mLog.uniCount = m.group();
+                }
+                m = uniCount2Pattern.matcher(logBody[i]);
+                if (m.find()) {
+                    mLog.uniCount2 = m.group();
+                }
+                m = uniStatePattern.matcher(logBody[i]);
+                if (m.find()) {
+                    mLog.uniState = m.group();
+                }
+                m = changePattern.matcher(logBody[i]);
+                if (m.find()) {
+                    mLog.change = m.group();
+                }
+                m = summaryPattern.matcher(logBody[i]);
+                if (m.find()) {
+                    mLog.summary = m.group();
+                }
+                m = psPattern.matcher(logBody[i]);
+                if (m.find()) {
+                    mLog.ps = m.group();
+                }
+                returnList.add(mLog);
+            }
+            return  returnList;
+        }
 		
 		private ArrayList<Course> parseCoursesList (String body) {
 			ArrayList<Course> courses = new ArrayList<Course>();

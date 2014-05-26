@@ -9,6 +9,7 @@ public class CoursesListDbHelper extends SQLiteOpenHelper {
 	
 	public final static String COURSES_TABLE_NAME = "courses";
 	public final static String CLASSES_TABLE_NAME = "classes";
+    public final static String MONEY_LOG_TABLE_NAME = "log";
 
 	public CoursesListDbHelper(Context context, String name,
 			CursorFactory factory, int version) {
@@ -24,9 +25,13 @@ public class CoursesListDbHelper extends SQLiteOpenHelper {
 		String createClassesSql = "CREATE TABLE " + CLASSES_TABLE_NAME + " (id VARCHAR ," +
 					"location VARCHAR, dayofweek INTEGER, semester INTEGER, start INTEGER, end INTEGER, "
 					+ "fre INTEGER, c_id VARCAHR PRIMARY KEY)";
-		
+		String createLogSql = "CREATE TABLE " + MONEY_LOG_TABLE_NAME + " (teacherName VARCHAR ," +
+                    "time VARCHAR, teacherCount VARCHAR, teacherCount2 VARCHAR, teacherState VARCHAR, " +
+                    "uniCount VARCHAR, uniCount2 VARCHAR, uniState VARCHAR, change VARCHAR, " +
+                    "summary VARCHAR, ps VARCHAR)";
 		db.execSQL(createClassesSql);
 		db.execSQL(createCoursesSql);
+        db.execSQL(createLogSql);
 	}
 
 	@Override

@@ -129,7 +129,8 @@ public class MainActivity extends Activity
 		// TODO Auto-generated method stub
 		checkQueryClass ();		
 		if (mGetGrsInfoClass.checkUserInfo()){
-			mGetGrsInfoClass.getClassesList();
+			//mGetGrsInfoClass.getClassesList();
+            mGetGrsInfoClass.getAllInfo();
 		}
 		
 	}
@@ -154,7 +155,7 @@ public class MainActivity extends Activity
         else if (nowSelected == 1){
             getFragmentManager().beginTransaction().replace(R.id.content_frame, AllCheckedCoursesFragment.newInstance(coursesData)).commit();
         }
-        Toast.makeText(this,"课程信息更新完成", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this,"信息更新完成", Toast.LENGTH_SHORT).show();
     }
 
 	@Override
