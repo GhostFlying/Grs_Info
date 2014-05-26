@@ -73,6 +73,13 @@ public class OneDayClassesFragment extends Fragment {
 			ClassCard mCard = new ClassCard(getActivity(), title, content);
 			newData.add(mCard);
 		}
+
+        if (origin.size() == 0) {
+            String title = "当日无课程";
+            String content = "";
+            ClassCard mCard = new ClassCard(getActivity(), title, content);
+            newData.add(mCard);
+        }
 	}
 	
 	private void initCard() {

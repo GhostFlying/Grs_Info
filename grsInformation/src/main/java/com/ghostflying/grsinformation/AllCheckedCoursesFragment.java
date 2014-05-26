@@ -89,6 +89,11 @@ public class AllCheckedCoursesFragment extends Fragment {
 			newData.add(mCard);		
 			
 		}
+
+        if (origin.size() == 0) {
+            CourseCard mCard = new CourseCard(getActivity(), "当前无课程或未登录", "");
+            newData.add(mCard);
+        }
 	}
 	
 	public class CourseCard extends Card{

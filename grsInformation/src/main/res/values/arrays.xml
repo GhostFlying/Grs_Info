@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="titles">
+        <item>当日课程</item>
+        <item>所有课程</item>
+        <item>月钱查询</item>
+        <item>登录信息</item>
+    </string-array>
+</resources>

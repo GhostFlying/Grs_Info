@@ -127,6 +127,8 @@ public class GetGrsInfoClass {
 	public boolean storeCoursesList () {
 		CoursesListDbHelper dbHelper = new CoursesListDbHelper(context, DB_NAME, null, 1);
 		SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.delete(CoursesListDbHelper.COURSES_TABLE_NAME, null, null);
+        db.delete(CoursesListDbHelper.CLASSES_TABLE_NAME, null, null);
 		ContentValues cv = new ContentValues();
 		for (Course c : coursesData){
 			cv.clear();
@@ -146,7 +148,7 @@ public class GetGrsInfoClass {
 				cv.put("dayofweek", each.day);
 				db.replace(CoursesListDbHelper.CLASSES_TABLE_NAME, null, cv);
 			}
-		}		
+		}
 		db.close();	
 		mCallback.onDbChanged();
 		state = State.DONE;
