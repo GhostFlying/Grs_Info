@@ -7,7 +7,7 @@ public class MoneyLog {
     String teacherName;
     String time;
     String teacherCount;
-    String teacherCOunt2;
+    String teacherCount2;
     String teacherState;
     String uniCount;
     String uniCount2;

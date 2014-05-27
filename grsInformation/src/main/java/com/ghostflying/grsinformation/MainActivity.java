@@ -34,6 +34,7 @@ public class MainActivity extends Activity
 	//OneDayClassesFragment mOneDayClassesFragment;
 	public static ArrayList<HashMap <String, Object>> todayClasses; 
 	public static ArrayList<Course> coursesData;
+    public static ArrayList<MoneyLog> moneyLogData;
 	GetGrsInfoClass mGetGrsInfoClass;
 	//AllCheckedCoursesFragment mAllCheckedCoursesFragment;
     private DrawerLayout mDrawerLayout;
@@ -58,6 +59,7 @@ public class MainActivity extends Activity
 
 		queryTodayClasses();
 		queryAllCourses(true);
+        queryMoneyLog();
         if (!isUserSetted()) {
             getFragmentManager().beginTransaction().replace(R.id.content_frame, new UserInfoSettingFragment()).commit();
         }
@@ -91,6 +93,10 @@ public class MainActivity extends Activity
                 getFragmentManager().beginTransaction().replace(R.id.content_frame, AllCheckedCoursesFragment.newInstance(coursesData)).commit();
                 mDrawerLayout.closeDrawer(mDrawerList);
                 break;
+            case 2:
+                getFragmentManager().beginTransaction().replace(R.id.content_frame, MoneyLogFragment.newInstance()).commit();
+                mDrawerLayout.closeDrawer(mDrawerList);
+                break;
             case 3:
                 getFragmentManager().beginTransaction().replace(R.id.content_frame, new UserInfoSettingFragment()).commit();
                 mDrawerLayout.closeDrawer(mDrawerList);
@@ -121,6 +127,7 @@ public class MainActivity extends Activity
 		// TODO Auto-generated method stub		
 		queryTodayClasses();
 		queryAllCourses(true);
+        queryMoneyLog();
         updateFragfmentData ();
 	}
 	
@@ -148,12 +155,20 @@ public class MainActivity extends Activity
 
 	}
 
+    private void queryMoneyLog() {
+        checkQueryClass();
+        moneyLogData = mGetGrsInfoClass.getMoneyLogFromDb();
+    }
+
     private void updateFragfmentData () {
         if (nowSelected == 0) {
             getFragmentManager().beginTransaction().replace(R.id.content_frame, OneDayClassesFragment.newInstance(todayClasses)).commit();
         }
         else if (nowSelected == 1){
             getFragmentManager().beginTransaction().replace(R.id.content_frame, AllCheckedCoursesFragment.newInstance(coursesData)).commit();
+        }
+        else if (nowSelected == 2) {
+            getFragmentManager().beginTransaction().replace(R.id.content_frame, MoneyLogFragment.newInstance()).commit();
         }
         Toast.makeText(this,"信息更新完成", Toast.LENGTH_SHORT).show();
     }

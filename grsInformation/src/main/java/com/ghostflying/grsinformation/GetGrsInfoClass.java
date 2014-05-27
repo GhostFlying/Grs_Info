@@ -118,6 +118,33 @@ public class GetGrsInfoClass {
 	public interface DataChangeListener {
 		public void onDbChanged ();
 	}
+
+    public ArrayList<MoneyLog> getMoneyLogFromDb() {
+        ArrayList<MoneyLog> returnList = new ArrayList<>();
+        Cursor logCursor = null;
+        CoursesListDbHelper dbHelper = new CoursesListDbHelper(context, DB_NAME, null, 1);
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        logCursor = db.query(CoursesListDbHelper.MONEY_LOG_TABLE_NAME, null, null, null, null, null, null);
+        while (logCursor.moveToNext()) {
+            MoneyLog log = new MoneyLog();
+
+            log.teacherName = logCursor.getString(0);
+            log.time = logCursor.getString(1);
+            log.teacherCount = logCursor.getString(2);
+            log.teacherCount2 = logCursor.getString(3);
+            log.teacherState = logCursor.getString(4);
+            log.teacherState = logCursor.getString(5);
+            log.uniCount = logCursor.getString(6);
+            log.uniCount2 = logCursor.getString(7);
+            log.uniState = logCursor.getString(8);
+            log.change = logCursor.getString(9);
+            log.summary = logCursor.getString(10);
+            log.ps = logCursor.getString(11);
+            returnList.add(log);
+        }
+        db.close();
+        return returnList;
+    }
 	
 	public boolean getClassesList() {
         mode = ModeState.COURSE;
@@ -171,11 +198,10 @@ public class GetGrsInfoClass {
 	private boolean storeCoursesList () {
 		CoursesListDbHelper dbHelper = new CoursesListDbHelper(context, DB_NAME, null, 1);
 		SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.delete(CoursesListDbHelper.COURSES_TABLE_NAME, null, null);
-        db.delete(CoursesListDbHelper.CLASSES_TABLE_NAME, null, null);
-        db.delete(CoursesListDbHelper.MONEY_LOG_TABLE_NAME, null, null);
 		ContentValues cv = new ContentValues();
         if (mode == ModeState.COURSE) {
+            db.delete(CoursesListDbHelper.COURSES_TABLE_NAME, null, null);
+            db.delete(CoursesListDbHelper.CLASSES_TABLE_NAME, null, null);
             for (Course c : coursesData){
                 cv.clear();
                 cv.put("id", c.courseNum);
@@ -198,10 +224,11 @@ public class GetGrsInfoClass {
         }
         else {
             for (MoneyLog log : moneyLogData) {
+                db.delete(CoursesListDbHelper.MONEY_LOG_TABLE_NAME, null, null);
                 cv.clear();
                 cv.put("teacherName", log.teacherName);
                 cv.put("teacherCount", log.teacherCount);
-                cv.put("teacherCount2", log.teacherCOunt2);
+                cv.put("teacherCount2", log.teacherCount2);
                 cv.put("teacherState", log.teacherState);
                 cv.put("uniCount", log.uniCount);
                 cv.put("uniCount2", log.uniCount2);
@@ -210,14 +237,14 @@ public class GetGrsInfoClass {
                 cv.put("change", log.change);
                 cv.put("summary", log.summary);
                 cv.put("ps", log.ps);
-                db.insert(CoursesListDbHelper.MONEY_LOG_TABLE_NAME, null, cv);
+                db.replace(CoursesListDbHelper.MONEY_LOG_TABLE_NAME, null, cv);
             }
         }
 		db.close();
 		state = State.DONE;
         if (mode == ModeState.BOTH) {
             mode = ModeState.COURSE;
-            getClassesList();
+            //getClassesList();
         }
         else {
             mode = ModeState.MONEY;
@@ -593,7 +620,7 @@ public class GetGrsInfoClass {
                 }
                 m = teacherCount2Pattern.matcher(logBody[i]);
                 if (m.find()) {
-                    mLog.teacherCOunt2 = m.group();
+                    mLog.teacherCount2 = m.group();
                 }
                 m = teacherStatePattern.matcher(logBody[i]);
                 if (m.find()) {
