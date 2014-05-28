@@ -133,13 +133,12 @@ public class GetGrsInfoClass {
             log.teacherCount = logCursor.getString(2);
             log.teacherCount2 = logCursor.getString(3);
             log.teacherState = logCursor.getString(4);
-            log.teacherState = logCursor.getString(5);
-            log.uniCount = logCursor.getString(6);
-            log.uniCount2 = logCursor.getString(7);
-            log.uniState = logCursor.getString(8);
-            log.change = logCursor.getString(9);
-            log.summary = logCursor.getString(10);
-            log.ps = logCursor.getString(11);
+            log.uniCount = logCursor.getString(5);
+            log.uniCount2 = logCursor.getString(6);
+            log.uniState = logCursor.getString(7);
+            log.change = logCursor.getString(8);
+            log.summary = logCursor.getString(9);
+            log.ps = logCursor.getString(10);
             returnList.add(log);
         }
         db.close();
@@ -223,8 +222,8 @@ public class GetGrsInfoClass {
             }
         }
         else {
+            db.delete(CoursesListDbHelper.MONEY_LOG_TABLE_NAME, null, null);
             for (MoneyLog log : moneyLogData) {
-                db.delete(CoursesListDbHelper.MONEY_LOG_TABLE_NAME, null, null);
                 cv.clear();
                 cv.put("teacherName", log.teacherName);
                 cv.put("teacherCount", log.teacherCount);
@@ -244,7 +243,7 @@ public class GetGrsInfoClass {
 		state = State.DONE;
         if (mode == ModeState.BOTH) {
             mode = ModeState.COURSE;
-            //getClassesList();
+            getClassesList();
         }
         else {
             mode = ModeState.MONEY;

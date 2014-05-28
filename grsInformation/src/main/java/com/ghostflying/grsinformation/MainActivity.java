@@ -82,6 +82,7 @@ public class MainActivity extends Activity
             mDrawerLayout.closeDrawer(mDrawerList);
             return;
         }
+        getActionBar().setTitle(mDrawerTitles[position]);
         switch (position){
             case 0:
                 //mOneDayClassesFragment = OneDayClassesFragment.newInstance(todayClasses);
